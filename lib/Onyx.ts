@@ -214,6 +214,14 @@ function set<TKey extends OnyxKey>(key: TKey, value: OnyxSetInput<TKey>): Promis
  * @param data object keyed by ONYXKEYS and the values to set
  */
 function multiSet(data: OnyxMultiSetInput): Promise<void> {
+    // When we use Onyx.set to set a key we want to clear the current delta changes from Onyx.merge that were queued
+    // before the value was set. If Onyx.merge is currently reading the old value from storage, it will then not apply the changes.
+    Object.keys(data).forEach((key)=>{
+        if (OnyxUtils.hasPendingMergeForKey(key)) {
+            delete OnyxUtils.getMergeQueue()[key];
+        }
+    })
+
     let newData = data;
 
     const skippableCollectionMemberIDs = OnyxUtils.getSkippableCollectionMemberIDs();
